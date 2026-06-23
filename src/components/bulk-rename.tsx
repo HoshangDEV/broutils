@@ -42,6 +42,22 @@ export function BulkRename() {
   const [status, setStatus] = useState<Status>({ state: "idle" });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  function addPaths(paths: string[]) {
+    setStatus({ state: "idle" });
+    setErrors({});
+    setFiles((prev) => {
+      const seen = new Set(prev.map((f) => f.path));
+      const next = [...prev];
+      for (const path of paths) {
+        if (!seen.has(path)) {
+          seen.add(path);
+          next.push({ path, name: basename(path) });
+        }
+      }
+      return next;
+    });
+  }
+
   // Listen for native file drops from the Tauri webview (gives real paths).
   useEffect(() => {
     const unlisten = getCurrentWebview().onDragDropEvent((event) => {
@@ -64,22 +80,6 @@ export function BulkRename() {
     const selected = await open({ multiple: true });
     if (!selected) return;
     addPaths(Array.isArray(selected) ? selected : [selected]);
-  }
-
-  function addPaths(paths: string[]) {
-    setStatus({ state: "idle" });
-    setErrors({});
-    setFiles((prev) => {
-      const seen = new Set(prev.map((f) => f.path));
-      const next = [...prev];
-      for (const path of paths) {
-        if (!seen.has(path)) {
-          seen.add(path);
-          next.push({ path, name: basename(path) });
-        }
-      }
-      return next;
-    });
   }
 
   function removeFile(path: string) {
