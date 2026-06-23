@@ -79,6 +79,7 @@ fn rename_files(paths: Vec<String>, base_name: String) -> Vec<RenameResult> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![rename_files])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

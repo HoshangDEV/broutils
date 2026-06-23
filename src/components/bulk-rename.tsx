@@ -1,22 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
-import { getCurrentWebview } from "@tauri-apps/api/webview";
-import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  FolderUploadIcon,
-  PencilEdit02Icon,
-  CheckmarkCircle02Icon,
   Alert02Icon,
   Cancel01Icon,
+  CheckmarkCircle02Icon,
+  FolderUploadIcon,
+  PencilEdit02Icon,
 } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { open } from "@tauri-apps/plugin-dialog";
+import { useEffect, useMemo, useState } from "react";
 
-import {
-  basename,
-  previewName,
-  renameFiles,
-  type DroppedFile,
-  type RenameResult,
-} from "@/lib/rename";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +21,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  basename,
+  previewName,
+  renameFiles,
+  type DroppedFile,
+  type RenameResult,
+} from "@/lib/rename";
+import { cn } from "@/lib/utils";
 
 type Status =
   | { state: "idle" }
@@ -59,6 +60,12 @@ export function BulkRename() {
     };
   }, []);
 
+  async function handleSelectFiles() {
+    const selected = await open({ multiple: true });
+    if (!selected) return;
+    addPaths(Array.isArray(selected) ? selected : [selected]);
+  }
+
   function addPaths(paths: string[]) {
     setStatus({ state: "idle" });
     setErrors({});
@@ -87,7 +94,9 @@ export function BulkRename() {
   }
 
   const canRename =
-    files.length > 0 && baseName.trim().length > 0 && status.state !== "renaming";
+    files.length > 0 &&
+    baseName.trim().length > 0 &&
+    status.state !== "renaming";
 
   const preview = useMemo(
     () =>
@@ -97,7 +106,7 @@ export function BulkRename() {
           ? previewName(file.name, baseName, i + 1)
           : null,
       })),
-    [files, baseName]
+    [files, baseName],
   );
 
   async function handleRename() {
@@ -107,7 +116,7 @@ export function BulkRename() {
 
     const results: RenameResult[] = await renameFiles(
       files.map((f) => f.path),
-      baseName
+      baseName,
     );
 
     const nextErrors: Record<string, string> = {};
@@ -148,14 +157,14 @@ export function BulkRename() {
           "flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors",
           isDragging
             ? "border-primary bg-primary/5"
-            : "border-border bg-muted/30"
+            : "border-border bg-muted/30",
         )}
       >
         <HugeiconsIcon
           icon={FolderUploadIcon}
           className={cn(
             "size-8",
-            isDragging ? "text-primary" : "text-muted-foreground"
+            isDragging ? "text-primary" : "text-muted-foreground",
           )}
         />
         <p className="text-sm font-medium">
@@ -166,6 +175,10 @@ export function BulkRename() {
             ? `${files.length} file${files.length === 1 ? "" : "s"} ready`
             : "Files are renamed in place — originals are replaced"}
         </p>
+        <Button className="mt-1" size="sm" onClick={handleSelectFiles}>
+          <HugeiconsIcon icon={FolderUploadIcon} />
+          Select Files
+        </Button>
       </div>
 
       {/* Controls */}
@@ -201,7 +214,7 @@ export function BulkRename() {
             "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm",
             status.failed === 0
               ? "border-border bg-muted/40 text-foreground"
-              : "border-destructive/30 bg-destructive/10 text-destructive"
+              : "border-destructive/30 bg-destructive/10 text-destructive",
           )}
         >
           <HugeiconsIcon
@@ -242,7 +255,11 @@ export function BulkRename() {
                       {error ? (
                         <span className="text-destructive">{error}</span>
                       ) : (
-                        <span className={file.newName ? "" : "text-muted-foreground"}>
+                        <span
+                          className={
+                            file.newName ? "" : "text-muted-foreground"
+                          }
+                        >
                           {file.newName ?? "—"}
                         </span>
                       )}
