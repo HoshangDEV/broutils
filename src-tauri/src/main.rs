@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    bulk_rename_lib::run()
+    broutils_lib::run()
 }
