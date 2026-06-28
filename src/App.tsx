@@ -1,5 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BulkRename } from "@/components/bulk-rename";
+import { ConvertImages } from "@/components/convert-images";
 import "./App.css";
 
 function App() {
@@ -13,11 +14,16 @@ function App() {
       <Tabs defaultValue="bulk-rename" className="w-full gap-6">
         <TabsList>
           <TabsTrigger value="bulk-rename">Bulk Rename</TabsTrigger>
+          <TabsTrigger value="convert-images">Convert Images</TabsTrigger>
           {/* Future tools get their own <TabsTrigger> + <TabsContent> here. */}
         </TabsList>
 
         <TabsContent value="bulk-rename">
           <BulkRename />
+        </TabsContent>
+
+        <TabsContent value="convert-images">
+          <ConvertImages />
         </TabsContent>
       </Tabs>
     </main>

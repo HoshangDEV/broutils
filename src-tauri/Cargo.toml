@@ -23,4 +23,13 @@ tauri-plugin-opener = "2"
 tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# Image conversion. `avif` enables the AVIF encoder; the rest of the formats
+# (jpeg/png/gif/bmp/tiff/ico/webp) ship in the default features.
+image = { version = "0.25", features = ["avif"] }
+# Lossy WebP encoding with a quality knob (the `image` crate's WebP encoder is
+# lossless-only).
+webp = "0.3"
+# HEIC/HEIF decoding via system libheif (input only). Requires libheif to be
+# installed on the build/host machine (e.g. `brew install libheif`).
+libheif-rs = "1.1"
 

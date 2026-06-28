@@ -4,9 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-BroUtils — a Tauri v2 desktop app. Multi-tool toolbox; currently one tool (Bulk Rename). New tools are added as tabs.
+BroUtils — a Tauri v2 desktop app. Multi-tool toolbox; tools are Bulk Rename and Convert Images. New tools are added as tabs.
 
 Tech stack: React 19 + TypeScript 5 (Vite 7) frontend, Rust backend via Tauri v2 IPC.
+
+## System dependencies
+
+Convert Images decodes HEIC/HEIF via the `libheif-rs` crate, which links against the **system libheif** library. It must be installed to build the Rust backend (`brew install libheif` on macOS). This also means `build:tauri:windows` (cross-compile) needs libheif available for the Windows target — HEIC input is effectively macOS/Linux-only for now.
 
 ## Package manager
 
