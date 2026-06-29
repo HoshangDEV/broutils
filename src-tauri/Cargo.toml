@@ -21,8 +21,13 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
 tauri-plugin-dialog = "2"
+# Used by Convert Videos to run the bundled FFmpeg sidecar and notify on finish.
+tauri-plugin-shell = "2"
+tauri-plugin-notification = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# Parses FFmpeg progress output (Duration:/time= lines) for Convert Videos.
+regex = "1"
 # Image conversion. `avif` enables the AVIF encoder; the rest of the formats
 # (jpeg/png/gif/bmp/tiff/ico/webp) ship in the default features.
 image = { version = "0.25", features = ["avif"] }

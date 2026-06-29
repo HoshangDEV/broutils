@@ -6,10 +6,9 @@ import {
   PencilEdit02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { getCurrentWebview } from "@tauri-apps/api/webview";
-import { open } from "@tauri-apps/plugin-dialog";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
+import { DropZone } from "@/components/shared/drop-zone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,7 +37,6 @@ type Status =
 export function BulkRename() {
   const [files, setFiles] = useState<DroppedFile[]>([]);
   const [baseName, setBaseName] = useState("");
-  const [isDragging, setIsDragging] = useState(false);
   const [status, setStatus] = useState<Status>({ state: "idle" });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -56,30 +54,6 @@ export function BulkRename() {
       }
       return next;
     });
-  }
-
-  // Listen for native file drops from the Tauri webview (gives real paths).
-  useEffect(() => {
-    const unlisten = getCurrentWebview().onDragDropEvent((event) => {
-      const payload = event.payload;
-      if (payload.type === "enter" || payload.type === "over") {
-        setIsDragging(true);
-      } else if (payload.type === "leave") {
-        setIsDragging(false);
-      } else if (payload.type === "drop") {
-        setIsDragging(false);
-        addPaths(payload.paths);
-      }
-    });
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, []);
-
-  async function handleSelectFiles() {
-    const selected = await open({ multiple: true });
-    if (!selected) return;
-    addPaths(Array.isArray(selected) ? selected : [selected]);
   }
 
   function removeFile(path: string) {
@@ -151,35 +125,16 @@ export function BulkRename() {
         </p>
       </div>
 
-      {/* Drop zone */}
-      <div
-        className={cn(
-          "flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors",
-          isDragging
-            ? "border-primary bg-primary/5"
-            : "border-border bg-muted/30",
-        )}
-      >
-        <HugeiconsIcon
-          icon={FolderUploadIcon}
-          className={cn(
-            "size-8",
-            isDragging ? "text-primary" : "text-muted-foreground",
-          )}
-        />
-        <p className="text-sm font-medium">
-          {isDragging ? "Drop to add files" : "Drag & drop files here"}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          {files.length > 0
+      <DropZone
+        onFiles={addPaths}
+        icon={FolderUploadIcon}
+        buttonLabel="Select Files"
+        hint={
+          files.length > 0
             ? `${files.length} file${files.length === 1 ? "" : "s"} ready`
-            : "Files are renamed in place — originals are replaced"}
-        </p>
-        <Button className="mt-1" size="sm" onClick={handleSelectFiles}>
-          <HugeiconsIcon icon={FolderUploadIcon} />
-          Select Files
-        </Button>
-      </div>
+            : "Files are renamed in place — originals are replaced"
+        }
+      />
 
       {/* Controls */}
       <div className="flex flex-col gap-2">

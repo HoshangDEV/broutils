@@ -1,5 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
 
+import { basename, extensionOf } from "@/lib/files";
+
+export { basename };
+
 /** Output formats the Rust side can encode to. */
 export const TARGET_FORMATS = [
   "jpg",
@@ -46,23 +50,10 @@ export type ConvertResult = {
   error: string | null;
 };
 
-/** Last path segment, handling both `/` and `\` separators. */
-export function basename(path: string): string {
-  const parts = path.split(/[/\\]/);
-  return parts[parts.length - 1] || path;
-}
-
-/** Lowercase extension (without the dot), or null when there is none. */
-export function extensionOf(name: string): string | null {
-  const dot = name.lastIndexOf(".");
-  if (dot <= 0 || dot === name.length - 1) return null;
-  return name.slice(dot + 1).toLowerCase();
-}
-
 /** True when the file looks like an image we can decode. */
 export function isSupportedImage(name: string): boolean {
-  const ext = extensionOf(name);
-  return ext !== null && INPUT_EXTENSIONS.includes(ext);
+  const ext = extensionOf(name)?.toLowerCase();
+  return ext !== undefined && ext !== null && INPUT_EXTENSIONS.includes(ext);
 }
 
 /** Filename stem (everything before the final extension). */

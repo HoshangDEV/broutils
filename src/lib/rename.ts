@@ -1,5 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
 
+import { basename, extensionOf } from "@/lib/files";
+
+export { basename };
+
 export type DroppedFile = {
   path: string;
   name: string;
@@ -12,20 +16,6 @@ export type RenameResult = {
   ok: boolean;
   error: string | null;
 };
-
-/** Last path segment, handling both `/` and `\` separators. */
-export function basename(path: string): string {
-  const parts = path.split(/[/\\]/);
-  return parts[parts.length - 1] || path;
-}
-
-/** Splits a filename into its extension (without the dot) and the rest. */
-function extensionOf(name: string): string | null {
-  const dot = name.lastIndexOf(".");
-  // No extension for dotfiles like ".env" or names with no dot.
-  if (dot <= 0 || dot === name.length - 1) return null;
-  return name.slice(dot + 1);
-}
 
 /**
  * Preview the new name for a file at a given 1-based index.

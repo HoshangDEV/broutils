@@ -6,10 +6,9 @@ import {
   Image02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { getCurrentWebview } from "@tauri-apps/api/webview";
-import { open } from "@tauri-apps/plugin-dialog";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { DropZone } from "@/components/shared/drop-zone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,6 +32,7 @@ import {
 import {
   basename,
   convertImages,
+  INPUT_EXTENSIONS,
   isSupportedImage,
   LOSSY_FORMATS,
   previewName,
@@ -62,7 +62,6 @@ export function ConvertImages() {
   const [baseName, setBaseName] = useState("");
   const [quality, setQuality] = useState(85);
   const [deleteOriginals, setDeleteOriginals] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
   const [status, setStatus] = useState<Status>({ state: "idle" });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -99,51 +98,6 @@ export function ConvertImages() {
       }
       return next;
     });
-  }
-
-  // Listen for native file drops from the Tauri webview (gives real paths).
-  useEffect(() => {
-    const unlisten = getCurrentWebview().onDragDropEvent((event) => {
-      const payload = event.payload;
-      if (payload.type === "enter" || payload.type === "over") {
-        setIsDragging(true);
-      } else if (payload.type === "leave") {
-        setIsDragging(false);
-      } else if (payload.type === "drop") {
-        setIsDragging(false);
-        addPaths(payload.paths);
-      }
-    });
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, []);
-
-  async function handleSelectFiles() {
-    const selected = await open({
-      multiple: true,
-      filters: [
-        {
-          name: "Images",
-          extensions: [
-            "jpg",
-            "jpeg",
-            "png",
-            "webp",
-            "avif",
-            "gif",
-            "bmp",
-            "tiff",
-            "tif",
-            "ico",
-            "heic",
-            "heif",
-          ],
-        },
-      ],
-    });
-    if (!selected) return;
-    addPaths(Array.isArray(selected) ? selected : [selected]);
   }
 
   function setFileFormat(path: string, format: TargetFormat) {
@@ -246,40 +200,20 @@ export function ConvertImages() {
         </p>
       </div>
 
-      {/* Drop zone */}
-      <div
-        className={cn(
-          "flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors",
-          isDragging
-            ? "border-primary bg-primary/5"
-            : "border-border bg-muted/30",
-        )}
-      >
-        <HugeiconsIcon
-          icon={Image02Icon}
-          className={cn(
-            "size-8",
-            isDragging ? "text-primary" : "text-muted-foreground",
-          )}
-        />
-        <p className="text-sm font-medium">
-          {isDragging ? "Drop to add images" : "Drag & drop images here"}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          {files.length > 0
+      <DropZone
+        onFiles={addPaths}
+        icon={Image02Icon}
+        title="Drag & drop images here"
+        buttonLabel="Select Images"
+        disabled={isConverting}
+        accept={isSupportedImage}
+        dialogFilters={[{ name: "Images", extensions: INPUT_EXTENSIONS }]}
+        hint={
+          files.length > 0
             ? `${files.length} image${files.length === 1 ? "" : "s"} ready`
-            : "jpg · png · webp · avif · gif · bmp · tiff · ico · heic"}
-        </p>
-        <Button
-          className="mt-1"
-          size="sm"
-          onClick={handleSelectFiles}
-          disabled={isConverting}
-        >
-          <HugeiconsIcon icon={Image02Icon} />
-          Select Images
-        </Button>
-      </div>
+            : "jpg · png · webp · avif · gif · bmp · tiff · ico · heic"
+        }
+      />
 
       {/* Controls */}
       <div className="flex flex-col gap-4">

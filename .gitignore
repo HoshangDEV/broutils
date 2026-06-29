@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# FFmpeg Windows sidecar (~200MB) — fetch with scripts/download-ffmpeg-windows.sh
+src-tauri/binaries/ffmpeg-x86_64-pc-windows-msvc.exe

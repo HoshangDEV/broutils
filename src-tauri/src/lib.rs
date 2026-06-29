@@ -1,3 +1,5 @@
+mod compress;
+
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
@@ -331,7 +333,17 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![rename_files, convert_images])
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_notification::init())
+        .manage(compress::CompressState::default())
+        .invoke_handler(tauri::generate_handler![
+            rename_files,
+            convert_images,
+            compress::compress_video,
+            compress::cancel_compression,
+            compress::get_file_size,
+            compress::detect_gpu_encoders,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

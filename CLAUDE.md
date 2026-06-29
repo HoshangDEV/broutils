@@ -4,13 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-BroUtils — a Tauri v2 desktop app. Multi-tool toolbox; tools are Bulk Rename and Convert Images. New tools are added as tabs.
+BroUtils — a Tauri v2 desktop app. Multi-tool toolbox; tools are Bulk Rename, Convert Images, and Compress Videos. New tools are added as tabs.
 
 Tech stack: React 19 + TypeScript 5 (Vite 7) frontend, Rust backend via Tauri v2 IPC.
+
+## Shared frontend primitives
+
+Reusable pieces live alongside the tools so each tab stays thin:
+- `src/components/shared/drop-zone.tsx` — the drag-and-drop / file-picker surface used by every tab (configurable icon, hint, dialog filters, optional `accept` predicate).
+- `src/lib/use-file-drop.ts` — hook wrapping the Tauri native drag-drop listener; returns `isDragging` and reports dropped paths.
+- `src/lib/files.ts` — `basename`, `extensionOf`, `formatSize`. `rename.ts`/`convert.ts` re-export `basename` for backwards compatibility.
 
 ## System dependencies
 
 Convert Images decodes HEIC/HEIF via the `libheif-rs` crate, which links against the **system libheif** library. It must be installed to build the Rust backend (`brew install libheif` on macOS). This also means `build:tauri:windows` (cross-compile) needs libheif available for the Windows target — HEIC input is effectively macOS/Linux-only for now.
+
+Compress Videos shells out to a bundled **FFmpeg sidecar** (`src-tauri/binaries/ffmpeg-<target-triple>`, declared as `externalBin` in `tauri.conf.json` and allowed via `shell:allow-execute` in capabilities). The macOS ARM64 binary is committed; the ~200MB Windows binary is gitignored — fetch it before a Windows build with `bash scripts/download-ffmpeg-windows.sh`. The tool also uses `tauri-plugin-notification` to notify when a batch finishes.
 
 ## Package manager
 
