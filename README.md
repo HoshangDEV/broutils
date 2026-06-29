@@ -1,3 +1,5 @@
+![BroUtils cover](public/cover.png)
+
 # BroUtils
 
 A small native desktop toolbox built with Tauri v2 + React. Three tools in one app:
@@ -5,6 +7,17 @@ A small native desktop toolbox built with Tauri v2 + React. Three tools in one a
 - **Bulk Rename** — rename a batch of files with find/replace or sequential numbering
 - **Convert Images** — convert JPEG, PNG, WEBP, HEIC/HEIF, and more to any common format (AVIF, WebP, JPEG, PNG…)
 - **Compress Videos** — batch-compress videos via a bundled FFmpeg sidecar with progress tracking and a finish notification
+
+## Download
+
+Pre-built binaries are attached to each [GitHub Release](https://github.com/HoshangDEV/broutils/releases/latest).
+
+| Platform | File |
+|---|---|
+| macOS (Apple Silicon) | `BroUtils_x.x.x_aarch64.dmg` |
+| Windows x64 | `BroUtils_x.x.x_x64-setup.exe` |
+
+> macOS note: the app is not notarized yet. On first launch, right-click → Open to bypass Gatekeeper.
 
 ## Tech stack
 
