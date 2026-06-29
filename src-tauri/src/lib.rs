@@ -200,7 +200,12 @@ fn load_image(src: &Path) -> Result<DynamicImage, String> {
         .map(|s| s.to_ascii_lowercase());
 
     match ext.as_deref() {
+        #[cfg(not(target_os = "windows"))]
         Some("heic") | Some("heif") => decode_heic(src),
+        #[cfg(target_os = "windows")]
+        Some("heic") | Some("heif") => {
+            Err("HEIC/HEIF input is not supported on Windows".to_string())
+        }
         _ => ImageReader::open(src)
             .map_err(|e| e.to_string())?
             .with_guessed_format()
@@ -211,6 +216,7 @@ fn load_image(src: &Path) -> Result<DynamicImage, String> {
 }
 
 /// Decodes a HEIC/HEIF file to an RGB8 image using system libheif.
+#[cfg(not(target_os = "windows"))]
 fn decode_heic(src: &Path) -> Result<DynamicImage, String> {
     use libheif_rs::{ColorSpace, HeifContext, LibHeif, RgbChroma};
 

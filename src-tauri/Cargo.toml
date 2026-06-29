@@ -34,7 +34,18 @@ image = { version = "0.25", features = ["avif"] }
 # Lossy WebP encoding with a quality knob (the `image` crate's WebP encoder is
 # lossless-only).
 webp = "0.3"
+
 # HEIC/HEIF decoding via system libheif (input only). Requires libheif to be
-# installed on the build/host machine (e.g. `brew install libheif`).
+# installed on the build/host machine (e.g. `brew install libheif`). There is no
+# system libheif for the Windows cross-compile target, so HEIC input is
+# macOS/Linux-only and the dependency is gated off Windows.
+[target.'cfg(not(target_os = "windows"))'.dependencies]
 libheif-rs = "1.1"
+
+# libwebp's SSE4.1 source files use intrinsics that need the `-msse4.1` arch
+# flag, which libwebp-sys only adds when its `sse41` feature is enabled. MSVC's
+# cl.exe tolerates the intrinsics without it, but clang-cl (used by cargo-xwin
+# for the Windows cross-compile) rejects them — so enable the feature there.
+[target.'cfg(target_os = "windows")'.dependencies]
+libwebp-sys = { version = "0.9", features = ["sse41"] }
 

@@ -421,6 +421,7 @@ version = "0.1.0"
 dependencies = [
  "image",
  "libheif-rs",
+ "libwebp-sys",
  "regex",
  "serde",
  "serde_json",
