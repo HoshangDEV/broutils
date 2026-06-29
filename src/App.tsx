@@ -2,6 +2,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BulkRename } from "@/components/bulk-rename";
 import { ConvertImages } from "@/components/convert-images";
 import { CompressVideos } from "@/components/compress-videos";
+import { HoshangDEVIcon } from "@/components/icon";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import "./App.css";
 
 function App() {
@@ -33,6 +35,14 @@ function App() {
           <CompressVideos />
         </TabsContent>
       </Tabs>
+
+      <button
+        onClick={() => openUrl("https://hoshang.dev")}
+        className="text-xs text-muted-foreground fill-muted-foreground gap-2 flex flex-col items-center hover:bg-muted/50 transition-colors w-fit p-4 rounded-xl mx-auto mt-auto cursor-pointer"
+      >
+        <HoshangDEVIcon width={25} height={25} className="inline-block" />
+        <p>HoshangDEV</p>
+      </button>
     </main>
   );
 }
