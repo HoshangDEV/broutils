@@ -3,6 +3,7 @@ import { BulkRename } from "@/components/bulk-rename";
 import { ConvertImages } from "@/components/convert-images";
 import { CompressVideos } from "@/components/compress-videos";
 import { HoshangDEVIcon, GitHubIcon } from "@/components/icon";
+import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useEffect, useState } from "react";
 import "./App.css";
@@ -11,10 +12,17 @@ function App() {
   const [activeTab, setActiveTab] = useState(() => {
     return localStorage.getItem("activeTab") || "compress-videos";
   });
+  const [version, setVersion] = useState("");
 
   useEffect(() => {
     localStorage.setItem("activeTab", activeTab);
   }, [activeTab]);
+
+  useEffect(() => {
+    getVersion()
+      .then(setVersion)
+      .catch(() => {});
+  }, []);
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-6 px-6 py-8">
@@ -22,6 +30,11 @@ function App() {
         <img src="/favicon.png" alt="BroUtils" className="size-7" />
         <h1 className="text-2xl font-bold tracking-tight">BroUtils</h1>
         <span className="text-sm text-muted-foreground">a small toolbox</span>
+        {version && (
+          <span className="ml-auto text-xs text-muted-foreground tabular-nums">
+            v{version}
+          </span>
+        )}
       </header>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full gap-6">
