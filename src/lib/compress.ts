@@ -126,16 +126,22 @@ export function buildOutputPath(
   renameBase?: string,
   renameIndex?: number,
 ): string {
-  const parts = inputPath.split("/");
-  const filename = parts[parts.length - 1];
+  // Handle both `/` and `\` so Windows paths keep their directory intact.
+  const sepIndex = Math.max(
+    inputPath.lastIndexOf("/"),
+    inputPath.lastIndexOf("\\"),
+  );
+  const filename = inputPath.slice(sepIndex + 1);
   const dot = filename.lastIndexOf(".");
   const name = dot >= 0 ? filename.slice(0, dot) : filename;
   const outFilename =
     renameBase && renameIndex !== undefined
       ? `${renameBase}-${renameIndex}.${outputFormat}`
       : `${name}${suffix}.${outputFormat}`;
-  const dir = outputDir ?? parts.slice(0, -1).join("/");
-  return `${dir}/${outFilename}`;
+  const dir = outputDir ?? (sepIndex >= 0 ? inputPath.slice(0, sepIndex) : "");
+  if (!dir) return outFilename;
+  const sep = dir.includes("\\") ? "\\" : "/";
+  return `${dir}${sep}${outFilename}`;
 }
 
 export interface DonePayload {
