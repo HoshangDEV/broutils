@@ -5,6 +5,7 @@ import {
   CheckmarkCircle02Icon,
   Film01Icon,
   InformationCircleIcon,
+  RefreshIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { open } from "@tauri-apps/plugin-dialog";
@@ -80,6 +81,17 @@ const STATUS_LABEL: Record<VideoStatus, string> = {
   error: "Error",
   cancelled: "Cancelled",
 };
+
+const isResettable = (s: VideoStatus) =>
+  s === "done" || s === "error" || s === "cancelled";
+
+const toPending = (i: VideoItem): VideoItem => ({
+  ...i,
+  status: "pending",
+  progress: 0,
+  outputSize: undefined,
+  error: undefined,
+});
 
 export function CompressVideos() {
   const [items, setItems] = useState<VideoItem[]>([]);
@@ -166,6 +178,16 @@ export function CompressVideos() {
     );
     await Promise.allSettled(compressing.map((i) => cancelCompression(i.id)));
     setItems([]);
+  }
+
+  function resetItem(id: string) {
+    setItems((prev) =>
+      prev.map((i) => (i.id === id && isResettable(i.status) ? toPending(i) : i)),
+    );
+  }
+
+  function resetAll() {
+    setItems((prev) => prev.map((i) => (isResettable(i.status) ? toPending(i) : i)));
   }
 
   function processItem(item: VideoItem, outputPath: string): Promise<void> {
@@ -512,6 +534,14 @@ export function CompressVideos() {
           <div className="flex items-center justify-end gap-2">
             <Button
               variant="ghost"
+              onClick={resetAll}
+              disabled={running || !items.some((i) => isResettable(i.status))}
+            >
+              <HugeiconsIcon icon={RefreshIcon} />
+              Reset all
+            </Button>
+            <Button
+              variant="ghost"
               onClick={clearAll}
               disabled={!hasFiles}
             >
@@ -559,14 +589,27 @@ export function CompressVideos() {
                         <HugeiconsIcon icon={Cancel01Icon} />
                       </Button>
                     ) : (
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        onClick={() => removeItem(item.id)}
-                        aria-label="Remove"
-                      >
-                        <HugeiconsIcon icon={Cancel01Icon} />
-                      </Button>
+                      <>
+                        {isResettable(item.status) && (
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={() => resetItem(item.id)}
+                            disabled={running}
+                            aria-label="Reset"
+                          >
+                            <HugeiconsIcon icon={RefreshIcon} />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => removeItem(item.id)}
+                          aria-label="Remove"
+                        >
+                          <HugeiconsIcon icon={Cancel01Icon} />
+                        </Button>
+                      </>
                     )}
                   </div>
 

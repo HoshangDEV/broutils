@@ -4,6 +4,7 @@ import {
   CheckmarkCircle02Icon,
   FolderUploadIcon,
   PencilEdit02Icon,
+  RefreshIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useMemo, useState } from "react";
@@ -65,6 +66,22 @@ export function BulkRename() {
     setFiles([]);
     setStatus({ state: "idle" });
     setErrors({});
+  }
+
+  /** Back to idle with results cleared — files stay queued for another pass. */
+  function resetAll() {
+    if (status.state === "renaming") return;
+    setStatus({ state: "idle" });
+    setErrors({});
+  }
+
+  function resetFile(path: string) {
+    if (status.state === "renaming") return;
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[path];
+      return next;
+    });
   }
 
   const canRename =
@@ -154,6 +171,17 @@ export function BulkRename() {
           </Button>
           <Button
             variant="ghost"
+            onClick={resetAll}
+            disabled={
+              status.state === "renaming" ||
+              (status.state !== "done" && Object.keys(errors).length === 0)
+            }
+          >
+            <HugeiconsIcon icon={RefreshIcon} />
+            Reset
+          </Button>
+          <Button
+            variant="ghost"
             onClick={clearAll}
             disabled={files.length === 0 || status.state === "renaming"}
           >
@@ -192,7 +220,7 @@ export function BulkRename() {
                 <TableHead className="w-10">#</TableHead>
                 <TableHead>Current name</TableHead>
                 <TableHead>New name</TableHead>
-                <TableHead className="w-10" />
+                <TableHead className="w-16" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -220,14 +248,26 @@ export function BulkRename() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        onClick={() => removeFile(file.path)}
-                        aria-label={`Remove ${file.name}`}
-                      >
-                        <HugeiconsIcon icon={Cancel01Icon} />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        {error && (
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={() => resetFile(file.path)}
+                            aria-label={`Reset ${file.name}`}
+                          >
+                            <HugeiconsIcon icon={RefreshIcon} />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => removeFile(file.path)}
+                          aria-label={`Remove ${file.name}`}
+                        >
+                          <HugeiconsIcon icon={Cancel01Icon} />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );

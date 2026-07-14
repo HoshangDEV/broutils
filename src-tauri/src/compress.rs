@@ -38,6 +38,28 @@ const GPU_ENCODERS: &[&str] = &[
     "hevc_videotoolbox", "hevc_nvenc", "hevc_amf",
 ];
 
+/// A compiled-in encoder can still fail at runtime (e.g. nvenc without an
+/// NVIDIA GPU), so encode one dummy frame to prove the hardware works.
+async fn test_encoder(app: &AppHandle, encoder: &str) -> bool {
+    let Ok(cmd) = app.shell().sidecar("ffmpeg") else {
+        return false;
+    };
+    cmd.args([
+        "-hide_banner",
+        "-f", "lavfi",
+        "-i", "color=c=black:s=256x256:r=30:d=0.1",
+        "-pix_fmt", "yuv420p",
+        "-frames:v", "1",
+        "-c:v", encoder,
+        "-f", "null",
+        "-",
+    ])
+    .output()
+    .await
+    .map(|out| out.status.success())
+    .unwrap_or(false)
+}
+
 #[tauri::command]
 pub async fn detect_gpu_encoders(app: AppHandle) -> Vec<String> {
     let Ok(out) = app
@@ -54,11 +76,13 @@ pub async fn detect_gpu_encoders(app: AppHandle) -> Vec<String> {
     let text = String::from_utf8_lossy(&out.stdout).to_string()
         + &String::from_utf8_lossy(&out.stderr).to_string();
 
-    GPU_ENCODERS
-        .iter()
-        .filter(|&&enc| text.contains(enc))
-        .map(|&s| s.to_string())
-        .collect()
+    let mut working = Vec::new();
+    for &enc in GPU_ENCODERS.iter().filter(|&&enc| text.contains(enc)) {
+        if test_encoder(&app, enc).await {
+            working.push(enc.to_string());
+        }
+    }
+    working
 }
 
 async fn probe_duration(app: &AppHandle, input_path: &str) -> Result<f32, String> {

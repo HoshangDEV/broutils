@@ -4,6 +4,7 @@ import {
   Cancel01Icon,
   CheckmarkCircle02Icon,
   Image02Icon,
+  RefreshIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -136,6 +137,22 @@ export function ConvertImages() {
     setFiles([]);
     setStatus({ state: "idle" });
     setErrors({});
+  }
+
+  /** Back to idle with results cleared — files stay queued for another pass. */
+  function resetAll() {
+    if (isConverting) return;
+    setStatus({ state: "idle" });
+    setErrors({});
+  }
+
+  function resetFile(path: string) {
+    if (isConverting) return;
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[path];
+      return next;
+    });
   }
 
   const showQuality = useMemo(
@@ -287,6 +304,17 @@ export function ConvertImages() {
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
+              onClick={resetAll}
+              disabled={
+                isConverting ||
+                (status.state !== "done" && Object.keys(errors).length === 0)
+              }
+            >
+              <HugeiconsIcon icon={RefreshIcon} />
+              Reset
+            </Button>
+            <Button
+              variant="ghost"
               onClick={clearAll}
               disabled={files.length === 0 || status.state === "converting"}
             >
@@ -331,7 +359,7 @@ export function ConvertImages() {
                 <TableHead>Current name</TableHead>
                 <TableHead className="w-32">Format</TableHead>
                 <TableHead>New name</TableHead>
-                <TableHead className="w-10" />
+                <TableHead className="w-16" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -373,15 +401,28 @@ export function ConvertImages() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        onClick={() => removeFile(file.path)}
-                        disabled={isConverting}
-                        aria-label={`Remove ${file.name}`}
-                      >
-                        <HugeiconsIcon icon={Cancel01Icon} />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        {error && (
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={() => resetFile(file.path)}
+                            disabled={isConverting}
+                            aria-label={`Reset ${file.name}`}
+                          >
+                            <HugeiconsIcon icon={RefreshIcon} />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => removeFile(file.path)}
+                          disabled={isConverting}
+                          aria-label={`Remove ${file.name}`}
+                        >
+                          <HugeiconsIcon icon={Cancel01Icon} />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
