@@ -163,6 +163,17 @@ fn build_ffmpeg_args(
         }
     }
 
+    // H.264 hardware encoders happily pass through the full-range yuvj420p of an
+    // iPhone screen recording, which several Android decoders (and WhatsApp)
+    // reject. H.265/VP9/AV1 are left alone so 10-bit HDR sources survive.
+    if encoder.starts_with("h264") || encoder == "libx264" {
+        args.extend([
+            "-vf".into(), "scale=out_range=tv".into(),
+            "-pix_fmt".into(), "yuv420p".into(),
+            "-color_range".into(), "tv".into(),
+        ]);
+    }
+
     if encode_audio {
         // WebM requires Opus; everything else gets AAC
         let audio_codec = if output_path.ends_with(".webm") { "libopus" } else { "aac" };
@@ -170,6 +181,14 @@ fn build_ffmpeg_args(
     } else {
         args.extend(["-c:a".into(), "copy".into()]);
     }
+
+    // Without faststart the moov atom lands after the mdat, and players that
+    // stream the file (WhatsApp, browsers) call it unsupported.
+    let lower = output_path.to_lowercase();
+    if lower.ends_with(".mp4") || lower.ends_with(".mov") || lower.ends_with(".m4v") {
+        args.extend(["-movflags".into(), "+faststart".into()]);
+    }
+
     args.extend(["-y".into(), output_path.into()]);
     args
 }
