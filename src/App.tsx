@@ -1,4 +1,13 @@
+import { Download04Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { checkForUpdate, type AvailableUpdate } from "@/lib/update";
 import { BulkRename } from "@/components/bulk-rename";
 import { ConvertImages } from "@/components/convert-images";
 import { CompressVideos } from "@/components/compress-videos";
@@ -13,6 +22,7 @@ function App() {
     return localStorage.getItem("activeTab") || "compress-videos";
   });
   const [version, setVersion] = useState("");
+  const [update, setUpdate] = useState<AvailableUpdate | null>(null);
 
   useEffect(() => {
     localStorage.setItem("activeTab", activeTab);
@@ -24,6 +34,12 @@ function App() {
       .catch(() => {});
   }, []);
 
+  // Once we know the running version, ask GitHub whether a newer one exists.
+  useEffect(() => {
+    if (!version) return;
+    checkForUpdate(version).then(setUpdate);
+  }, [version]);
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-6 px-6 py-8">
       <header className="flex items-center gap-2">
@@ -31,9 +47,27 @@ function App() {
         <h1 className="text-2xl font-bold tracking-tight">BroUtils</h1>
         <span className="text-sm text-muted-foreground">a small toolbox</span>
         {version && (
-          <span className="ml-auto text-xs text-muted-foreground tabular-nums">
-            v{version}
-          </span>
+          <div className="ml-auto flex items-center gap-1">
+            <span className="text-xs text-muted-foreground tabular-nums">
+              v{version}
+            </span>
+            {update && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => openUrl(update.url)}
+                    aria-label={`Update to v${update.version}`}
+                    className="flex size-6 cursor-pointer items-center justify-center rounded-md text-primary transition-colors hover:bg-muted"
+                  >
+                    <HugeiconsIcon icon={Download04Icon} className="size-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  v{update.version} is available — open the release page
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
         )}
       </header>
 

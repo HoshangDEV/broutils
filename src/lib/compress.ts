@@ -21,6 +21,8 @@ export interface VideoItem {
   inputSize: number;
   status: VideoStatus;
   progress: number;
+  /** Destination path, set once compression starts — used to reveal the file. */
+  outputPath?: string;
   outputSize?: number;
   error?: string;
 }

@@ -17,6 +17,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { DropZone } from "@/components/shared/drop-zone";
+import { RevealButton } from "@/components/shared/reveal-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -89,6 +90,7 @@ const toPending = (i: VideoItem): VideoItem => ({
   ...i,
   status: "pending",
   progress: 0,
+  outputPath: undefined,
   outputSize: undefined,
   error: undefined,
 });
@@ -234,7 +236,9 @@ export function CompressVideos() {
       }
 
       setItems((prev) =>
-        prev.map((i) => (i.id === item.id ? { ...i, status: "compressing" } : i)),
+        prev.map((i) =>
+          i.id === item.id ? { ...i, status: "compressing", outputPath } : i,
+        ),
       );
 
       const encoder = deriveEncoder(videoCodec, useGpu, gpuEncoders);
@@ -301,6 +305,9 @@ export function CompressVideos() {
 
   const hasFiles = items.length > 0;
   const hasPending = items.some((i) => i.status === "pending");
+  const donePaths = items
+    .filter((i) => i.status === "done" && i.outputPath)
+    .map((i) => i.outputPath as string);
   const gpuOn = useGpu && gpuAvailableForCodec(videoCodec, gpuEncoders);
   const effectiveEncoder = deriveEncoder(videoCodec, useGpu, gpuEncoders);
 
@@ -532,6 +539,9 @@ export function CompressVideos() {
           </div>
 
           <div className="flex items-center justify-end gap-2">
+            {donePaths.length > 0 && (
+              <RevealButton paths={donePaths} label="Show in folder" />
+            )}
             <Button
               variant="ghost"
               onClick={resetAll}
@@ -590,6 +600,12 @@ export function CompressVideos() {
                       </Button>
                     ) : (
                       <>
+                        {item.status === "done" && item.outputPath && (
+                          <RevealButton
+                            paths={[item.outputPath]}
+                            aria-label={`Show ${item.fileName} in folder`}
+                          />
+                        )}
                         {isResettable(item.status) && (
                           <Button
                             variant="ghost"

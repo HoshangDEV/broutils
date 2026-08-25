@@ -10,6 +10,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { useMemo, useState } from "react";
 
 import { DropZone } from "@/components/shared/drop-zone";
+import { RevealButton } from "@/components/shared/reveal-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,7 +34,7 @@ import { cn } from "@/lib/utils";
 type Status =
   | { state: "idle" }
   | { state: "renaming" }
-  | { state: "done"; ok: number; failed: number };
+  | { state: "done"; ok: number; failed: number; paths: string[] };
 
 export function BulkRename() {
   const [files, setFiles] = useState<DroppedFile[]>([]);
@@ -111,6 +112,7 @@ export function BulkRename() {
     );
 
     const nextErrors: Record<string, string> = {};
+    const renamed: string[] = [];
     let ok = 0;
     let failed = 0;
 
@@ -118,6 +120,7 @@ export function BulkRename() {
     const updated: DroppedFile[] = results.map((r) => {
       if (r.ok) {
         ok++;
+        renamed.push(r.new_path);
         return { path: r.new_path, name: r.new_name };
       }
       failed++;
@@ -127,7 +130,7 @@ export function BulkRename() {
 
     setFiles(updated);
     setErrors(nextErrors);
-    setStatus({ state: "done", ok, failed });
+    setStatus({ state: "done", ok, failed, paths: renamed });
   }
 
   return (
@@ -208,6 +211,11 @@ export function BulkRename() {
             Renamed {status.ok} file{status.ok === 1 ? "" : "s"}
             {status.failed > 0 && `, ${status.failed} failed`}.
           </span>
+          {status.paths.length > 0 && (
+            <div className="ml-auto">
+              <RevealButton paths={status.paths} label="Show in folder" />
+            </div>
+          )}
         </div>
       )}
 
@@ -220,7 +228,7 @@ export function BulkRename() {
                 <TableHead className="w-10">#</TableHead>
                 <TableHead>Current name</TableHead>
                 <TableHead>New name</TableHead>
-                <TableHead className="w-16" />
+                <TableHead className="w-24" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -249,6 +257,14 @@ export function BulkRename() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
+                        {status.state === "done" &&
+                          !error &&
+                          status.paths.includes(file.path) && (
+                            <RevealButton
+                              paths={[file.path]}
+                              aria-label={`Show ${file.name} in folder`}
+                            />
+                          )}
                         {error && (
                           <Button
                             variant="ghost"

@@ -10,6 +10,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { DropZone } from "@/components/shared/drop-zone";
+import { RevealButton } from "@/components/shared/reveal-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -65,6 +66,8 @@ export function ConvertImages() {
   const [deleteOriginals, setDeleteOriginals] = useState(false);
   const [status, setStatus] = useState<Status>({ state: "idle" });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  /** Source path → written output path, for the "Show in folder" buttons. */
+  const [outputs, setOutputs] = useState<Record<string, string>>({});
 
   const isConverting = status.state === "converting";
 
@@ -87,6 +90,7 @@ export function ConvertImages() {
     if (isConvertingRef.current) return;
     setStatus({ state: "idle" });
     setErrors({});
+    setOutputs({});
     setFiles((prev) => {
       const seen = new Set(prev.map((f) => f.path));
       const next = [...prev];
@@ -108,6 +112,7 @@ export function ConvertImages() {
     );
     // The output name changes, so any prior per-row error no longer applies.
     setErrors({});
+    setOutputs({});
     setStatus({ state: "idle" });
   }
 
@@ -117,12 +122,18 @@ export function ConvertImages() {
     setBulkFormat(format);
     setFiles((prev) => prev.map((f) => ({ ...f, format })));
     setErrors({});
+    setOutputs({});
     setStatus({ state: "idle" });
   }
 
   function removeFile(path: string) {
     if (isConverting) return;
     setFiles((prev) => prev.filter((f) => f.path !== path));
+    setOutputs((prev) => {
+      const next = { ...prev };
+      delete next[path];
+      return next;
+    });
     setStatus({ state: "idle" });
   }
 
@@ -130,6 +141,7 @@ export function ConvertImages() {
     setBaseName(value);
     // Output names change with the base, so stale row errors no longer match.
     setErrors({});
+    setOutputs({});
     setStatus({ state: "idle" });
   }
 
@@ -137,6 +149,7 @@ export function ConvertImages() {
     setFiles([]);
     setStatus({ state: "idle" });
     setErrors({});
+    setOutputs({});
   }
 
   /** Back to idle with results cleared — files stay queued for another pass. */
@@ -144,6 +157,7 @@ export function ConvertImages() {
     if (isConverting) return;
     setStatus({ state: "idle" });
     setErrors({});
+    setOutputs({});
   }
 
   function resetFile(path: string) {
@@ -161,6 +175,8 @@ export function ConvertImages() {
   );
 
   const canConvert = files.length > 0 && status.state !== "converting";
+
+  const outputPaths = useMemo(() => Object.values(outputs), [outputs]);
 
   const preview = useMemo(
     () =>
@@ -185,11 +201,13 @@ export function ConvertImages() {
       );
 
       const nextErrors: Record<string, string> = {};
+      const nextOutputs: Record<string, string> = {};
       let ok = 0;
       let failed = 0;
       for (const r of results) {
         if (r.ok) {
           ok++;
+          nextOutputs[r.old_path] = r.new_path;
         } else {
           failed++;
           nextErrors[r.old_path] = r.error ?? "conversion failed";
@@ -197,12 +215,14 @@ export function ConvertImages() {
       }
 
       setErrors(nextErrors);
+      setOutputs(nextOutputs);
       setStatus({ state: "done", ok, failed });
     } catch (e) {
       // The IPC call itself failed (nothing was converted) — surface it instead
       // of leaving the UI stuck on "Converting…".
       const message = e instanceof Error ? e.message : String(e);
       setErrors(Object.fromEntries(files.map((f) => [f.path, message])));
+      setOutputs({});
       setStatus({ state: "done", ok: 0, failed: files.length });
     }
   }
@@ -346,6 +366,11 @@ export function ConvertImages() {
             Converted {status.ok} image{status.ok === 1 ? "" : "s"}
             {status.failed > 0 && `, ${status.failed} failed`}.
           </span>
+          {outputPaths.length > 0 && (
+            <div className="ml-auto">
+              <RevealButton paths={outputPaths} label="Show in folder" />
+            </div>
+          )}
         </div>
       )}
 
@@ -359,7 +384,7 @@ export function ConvertImages() {
                 <TableHead>Current name</TableHead>
                 <TableHead className="w-32">Format</TableHead>
                 <TableHead>New name</TableHead>
-                <TableHead className="w-16" />
+                <TableHead className="w-24" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -402,6 +427,12 @@ export function ConvertImages() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
+                        {outputs[file.path] && (
+                          <RevealButton
+                            paths={[outputs[file.path]]}
+                            aria-label={`Show ${file.newName} in folder`}
+                          />
+                        )}
                         {error && (
                           <Button
                             variant="ghost"
