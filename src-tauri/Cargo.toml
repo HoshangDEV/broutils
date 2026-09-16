@@ -37,11 +37,17 @@ webp = "0.3"
 # Stack Images sends preview thumbnails to the webview as base64 data URLs.
 base64 = "0.22"
 
-# HEIC/HEIF decoding via system libheif (input only). Requires libheif to be
-# installed on the build/host machine (e.g. `brew install libheif`). There is no
-# system libheif for the Windows cross-compile target, so HEIC input is
-# macOS/Linux-only and the dependency is gated off Windows.
-[target.'cfg(not(target_os = "windows"))'.dependencies]
+# HEIC/HEIF decoding (input only, see src/heic.rs). macOS uses the system
+# ImageIO framework, so the app bundle ships no third-party library and runs on
+# any Mac. Other Unix targets link against system libheif, which must be
+# installed on the build/host machine. There is no HEIC decoder for the Windows
+# cross-compile target, so HEIC input is unsupported there.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2-core-foundation = { version = "0.3", default-features = false, features = ["std", "CFCGTypes", "CFDictionary", "CFNumber", "CFString", "CFURL"] }
+objc2-core-graphics = { version = "0.3", default-features = false, features = ["std", "CGBitmapContext", "CGColorSpace", "CGContext", "CGImage"] }
+objc2-image-io = { version = "0.3", default-features = false, features = ["std", "CGImageProperties", "CGImageSource", "objc2-core-graphics"] }
+
+[target.'cfg(not(any(target_os = "windows", target_os = "macos")))'.dependencies]
 libheif-rs = "1.1"
 
 # libwebp's SSE4.1 source files use intrinsics that need the `-msse4.1` arch

@@ -1,4 +1,6 @@
 mod compress;
+#[cfg(not(target_os = "windows"))]
+mod heic;
 mod stack;
 
 use std::fs::File;
@@ -192,8 +194,9 @@ fn output_extension(format: &str) -> &'static str {
     }
 }
 
-/// Loads an image, routing HEIC/HEIF through libheif and everything else
-/// through the `image` crate's auto-detecting reader.
+/// Loads an image, routing HEIC/HEIF through the platform HEIC decoder (see
+/// `heic.rs`) and everything else through the `image` crate's auto-detecting
+/// reader.
 fn load_image(src: &Path) -> Result<DynamicImage, String> {
     let ext = src
         .extension()
@@ -202,7 +205,7 @@ fn load_image(src: &Path) -> Result<DynamicImage, String> {
 
     match ext.as_deref() {
         #[cfg(not(target_os = "windows"))]
-        Some("heic") | Some("heif") => decode_heic(src),
+        Some("heic") | Some("heif") => heic::decode_heic(src),
         #[cfg(target_os = "windows")]
         Some("heic") | Some("heif") => {
             Err("HEIC/HEIF input is not supported on Windows".to_string())
@@ -214,41 +217,6 @@ fn load_image(src: &Path) -> Result<DynamicImage, String> {
             .decode()
             .map_err(|e| e.to_string()),
     }
-}
-
-/// Decodes a HEIC/HEIF file to an RGB8 image using system libheif.
-#[cfg(not(target_os = "windows"))]
-fn decode_heic(src: &Path) -> Result<DynamicImage, String> {
-    use libheif_rs::{ColorSpace, HeifContext, LibHeif, RgbChroma};
-
-    let path = src.to_str().ok_or("path is not valid UTF-8")?;
-    let lib_heif = LibHeif::new();
-    let ctx = HeifContext::read_from_file(path).map_err(|e| e.to_string())?;
-    let handle = ctx.primary_image_handle().map_err(|e| e.to_string())?;
-    let decoded = lib_heif
-        .decode(&handle, ColorSpace::Rgb(RgbChroma::Rgb), None)
-        .map_err(|e| e.to_string())?;
-
-    let planes = decoded.planes();
-    let plane = planes
-        .interleaved
-        .ok_or("HEIC image has no interleaved RGB plane")?;
-
-    let width = plane.width as usize;
-    let height = plane.height as usize;
-    let stride = plane.stride;
-    let row_bytes = width * 3;
-
-    // libheif rows are padded to `stride`; repack into a tight RGB buffer.
-    let mut buf = Vec::with_capacity(width * height * 3);
-    for y in 0..height {
-        let start = y * stride;
-        buf.extend_from_slice(&plane.data[start..start + row_bytes]);
-    }
-
-    image::RgbImage::from_raw(width as u32, height as u32, buf)
-        .map(DynamicImage::ImageRgb8)
-        .ok_or_else(|| "failed to build image from HEIC pixels".into())
 }
 
 /// Converts the image at `src` into `dst` in the requested format.

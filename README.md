@@ -18,7 +18,7 @@ Pre-built binaries are attached to each [GitHub Release](https://github.com/Hosh
 | macOS (Apple Silicon) | `BroUtils_x.x.x_aarch64.dmg` |
 | Windows x64 | `BroUtils_x.x.x_x64-setup.exe` |
 
-> macOS note: the app is not notarized yet. On first launch, right-click → Open to bypass Gatekeeper.
+> macOS note: the app is not notarized yet. On first launch macOS blocks it — open **System Settings → Privacy & Security** and click **Open Anyway**.
 
 ## Tech stack
 
@@ -26,7 +26,7 @@ Pre-built binaries are attached to each [GitHub Release](https://github.com/Hosh
 |---|---|
 | UI | React 19, TypeScript 5, Tailwind CSS 4, shadcn/ui |
 | Desktop shell | Tauri v2 |
-| Backend | Rust (image crate, libheif-rs, regex) |
+| Backend | Rust (image crate, ImageIO on macOS, regex) |
 | Video codec | FFmpeg sidecar (bundled binary) |
 | Package manager | Bun |
 
@@ -34,7 +34,6 @@ Pre-built binaries are attached to each [GitHub Release](https://github.com/Hosh
 
 - [Rust](https://rustup.rs/) (stable)
 - [Bun](https://bun.sh/)
-- **macOS only:** `brew install libheif` — required to build the HEIC/HEIF decoder
 - The macOS ARM64 FFmpeg binary is committed. For a Windows build, fetch it first (see below).
 
 ## Getting started

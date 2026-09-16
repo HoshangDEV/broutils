@@ -17,7 +17,7 @@ Reusable pieces live alongside the tools so each tab stays thin:
 
 ## System dependencies
 
-Convert Images decodes HEIC/HEIF via the `libheif-rs` crate, which links against the **system libheif** library. It must be installed to build the Rust backend (`brew install libheif` on macOS). This also means `build:tauri:windows` (cross-compile) needs libheif available for the Windows target — HEIC input is effectively macOS/Linux-only for now.
+HEIC/HEIF input (`src-tauri/src/heic.rs`) is decoded with the system **ImageIO** framework on macOS, so the app bundle links no third-party libraries and nothing extra needs installing to build it. Other Unix targets use the `libheif-rs` crate, which links against the **system libheif** library. HEIC input is unsupported on Windows. The macOS bundle is ad-hoc signed (`bundle.macOS.signingIdentity: "-"`) — without it, Gatekeeper reports the downloaded app as damaged. Keep the macOS binary free of Homebrew dylibs: hardened runtime refuses to load them, and they don't exist on users' Macs.
 
 Compress Videos shells out to a bundled **FFmpeg sidecar** (`src-tauri/binaries/ffmpeg-<target-triple>`, declared as `externalBin` in `tauri.conf.json` and allowed via `shell:allow-execute` in capabilities). The macOS ARM64 binary is committed; the ~200MB Windows binary is gitignored — fetch it before a Windows build with `bash scripts/download-ffmpeg-windows.sh`. The tool also uses `tauri-plugin-notification` to notify when a batch finishes.
 

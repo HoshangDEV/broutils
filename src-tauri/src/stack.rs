@@ -225,7 +225,7 @@ fn load_upright(src: &Path) -> Result<DynamicImage, String> {
         .extension()
         .and_then(|e| e.to_str())
         .is_some_and(|e| e.eq_ignore_ascii_case("heic") || e.eq_ignore_ascii_case("heif"));
-    // libheif already applies the container's rotation/mirroring when decoding.
+    // The HEIC decoder already applies the container's rotation/mirroring.
     if is_heif {
         return load_image(src);
     }
