@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
 import { INPUT_EXTENSIONS, isSupportedImage } from "@/lib/convert";
-import { basename, extensionOf } from "@/lib/files";
+import { basename } from "@/lib/files";
 
 export { basename, INPUT_EXTENSIONS, isSupportedImage };
 
@@ -56,20 +56,32 @@ export async function imagePreview(path: string): Promise<ImagePreview> {
   }
 }
 
+/**
+ * Stacks the images and saves the result next to the first one as
+ * `{fileStem}.{ext}` (Rust adds a numeric suffix instead of overwriting).
+ */
 export function stackImages(
   paths: string[],
-  outputPath: string,
+  fileStem: string,
   format: StackFormat,
   quality: number,
   matchWidth: MatchWidth,
 ): Promise<StackResult> {
   return invoke<StackResult>("stack_images", {
     paths,
-    outputPath,
+    fileStem,
     format,
     quality,
     matchWidth,
   });
+}
+
+/** `stacked-2026-09-16-181530` — local date and time, so repeat saves don't collide. */
+export function stackFileStem(date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const day = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  const time = `${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
+  return `stacked-${day}-${time}`;
 }
 
 /** Height after scaling to `width`; mirrors `scaled_height` in Rust. */
@@ -98,20 +110,4 @@ export function formatLimitError(
   const max = FORMAT_MAX_DIMENSION[format];
   if (!max || (size.width <= max && size.height <= max)) return null;
   return `${format.toUpperCase()} can't exceed ${max.toLocaleString()} px per side. Use PNG instead.`;
-}
-
-/**
- * Makes the save-dialog path agree with a format. A recognised extension the
- * user typed wins (and picks the format); otherwise the selected one is added.
- */
-export function resolveOutput(
-  path: string,
-  format: StackFormat,
-): { path: string; format: StackFormat } {
-  const ext = extensionOf(basename(path))?.toLowerCase();
-  if (ext === "jpeg") return { path, format: "jpg" };
-  if (ext && (STACK_FORMATS as readonly string[]).includes(ext)) {
-    return { path, format: ext as StackFormat };
-  }
-  return { path: `${path}.${format}`, format };
 }

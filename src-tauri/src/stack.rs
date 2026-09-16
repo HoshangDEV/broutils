@@ -1,11 +1,11 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use base64::Engine;
 use image::metadata::Orientation;
 use image::{imageops, DynamicImage, ImageDecoder, ImageReader, RgbaImage};
 use serde::Serialize;
 
-use crate::{encode_image, load_image, temp_path};
+use crate::{encode_image, load_image, output_extension, temp_path};
 
 /// Longest edge budget for the in-app thumbnail. Wide enough to look sharp in
 /// the preview column on a 2x display; tall enough for long screenshots.
@@ -64,25 +64,23 @@ pub async fn image_preview(path: String) -> Result<ImagePreview, String> {
     .map_err(|e| e.to_string())?
 }
 
-/// Stacks the images top-to-bottom, in the given order, into one image at
-/// `output_path`.
+/// Stacks the images top-to-bottom, in the given order, into one image saved
+/// next to the first image as `{file_stem}.{ext}`. A `-2`, `-3`, … suffix is
+/// added rather than overwriting an existing file.
 ///
 /// Every image is first scaled (aspect ratio kept) to a shared width:
 /// - `match_width = "widest"`: smaller images are enlarged to the widest one.
 /// - `match_width = "narrowest"`: larger images are shrunk to the narrowest one.
-///
-/// `output_path` comes from a native save dialog, so an existing file there is
-/// overwritten — the dialog already asked the user.
 #[tauri::command]
 pub async fn stack_images(
     paths: Vec<String>,
-    output_path: String,
+    file_stem: String,
     format: String,
     quality: u8,
     match_width: String,
 ) -> Result<StackResult, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        stack_blocking(&paths, &output_path, &format, quality, &match_width)
+        stack_blocking(&paths, &file_stem, &format, quality, &match_width)
     })
     .await
     .map_err(|e| e.to_string())?
@@ -90,7 +88,7 @@ pub async fn stack_images(
 
 fn stack_blocking(
     paths: &[String],
-    output_path: &str,
+    file_stem: &str,
     format: &str,
     quality: u8,
     match_width: &str,
@@ -99,12 +97,21 @@ fn stack_blocking(
         return Err("add at least two images to stack".into());
     }
 
-    let images = paths
-        .iter()
-        .map(|p| {
-            load_upright(Path::new(p)).map_err(|e| format!("{}: {e}", file_name(p)))
-        })
-        .collect::<Result<Vec<_>, _>>()?;
+    // Decode every image on its own thread — decoding dominates the run time.
+    let images = std::thread::scope(|s| {
+        let handles: Vec<_> = paths
+            .iter()
+            .map(|p| {
+                s.spawn(move || {
+                    load_upright(Path::new(p)).map_err(|e| format!("{}: {e}", file_name(p)))
+                })
+            })
+            .collect();
+        handles
+            .into_iter()
+            .map(|h| h.join().unwrap_or_else(|_| Err("an image failed to decode".into())))
+            .collect::<Result<Vec<_>, String>>()
+    })?;
 
     let widths = images.iter().map(|img| img.width());
     let width = match match_width {
@@ -122,34 +129,59 @@ fn stack_blocking(
 
     check_output_size(format, width, height)?;
 
+    // Split the canvas into one disjoint horizontal band per image, then resize
+    // each image straight into its band in parallel.
     let mut canvas = RgbaImage::new(width, height);
-    let mut y: i64 = 0;
-    for (img, h) in images.into_iter().zip(heights) {
-        let layer = if img.width() == width && img.height() == h {
-            img.into_rgba8()
-        } else {
-            img.resize_exact(width, h, imageops::FilterType::Lanczos3)
-                .into_rgba8()
-        };
-        imageops::replace(&mut canvas, &layer, 0, y);
-        y += i64::from(h);
-    }
+    let row_bytes = width as usize * 4;
+    std::thread::scope(|s| {
+        let mut rest: &mut [u8] = &mut canvas;
+        for (img, &h) in images.into_iter().zip(&heights) {
+            let (band, tail) = std::mem::take(&mut rest).split_at_mut(row_bytes * h as usize);
+            rest = tail;
+            s.spawn(move || {
+                let layer = if img.width() == width && img.height() == h {
+                    img.into_rgba8()
+                } else {
+                    img.resize_exact(width, h, imageops::FilterType::Lanczos3)
+                        .into_rgba8()
+                };
+                band.copy_from_slice(&layer);
+            });
+        }
+    });
 
     let fmt = format.to_ascii_lowercase();
-    let dst = Path::new(output_path);
-    let tmp = temp_path(dst);
+    let dst = unique_output_path(Path::new(&paths[0]), file_stem, output_extension(&fmt));
+    let tmp = temp_path(&dst);
     let written = encode_image(DynamicImage::ImageRgba8(canvas), &tmp, &fmt, quality)
-        .and_then(|()| std::fs::rename(&tmp, dst).map_err(|e| e.to_string()));
+        .and_then(|()| std::fs::rename(&tmp, &dst).map_err(|e| e.to_string()));
     if let Err(e) = written {
         let _ = std::fs::remove_file(&tmp);
         return Err(e);
     }
 
     Ok(StackResult {
-        path: output_path.to_string(),
+        path: dst.to_string_lossy().into_owned(),
         width,
         height,
     })
+}
+
+/// `{stem}.{ext}` in the folder of `first`, or `{stem}-2.{ext}`, `{stem}-3.{ext}`, …
+/// when that name is already taken.
+fn unique_output_path(first: &Path, stem: &str, ext: &str) -> PathBuf {
+    let dir = first.parent().unwrap_or_else(|| Path::new(""));
+    let stem = match stem.trim() {
+        "" => "stacked",
+        s => s,
+    };
+    let mut candidate = dir.join(format!("{stem}.{ext}"));
+    let mut n = 2;
+    while candidate.exists() {
+        candidate = dir.join(format!("{stem}-{n}.{ext}"));
+        n += 1;
+    }
+    candidate
 }
 
 /// Height after scaling `img` to `width`, rounded to the nearest pixel.

@@ -10,8 +10,6 @@ import {
   Layers01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { dirname, join } from "@tauri-apps/api/path";
-import { save } from "@tauri-apps/plugin-dialog";
 import { useState, type ReactNode } from "react";
 
 import { DropZone } from "@/components/shared/drop-zone";
@@ -34,9 +32,9 @@ import {
   isSupportedImage,
   LOSSY_STACK_FORMATS,
   MATCH_WIDTH_LABELS,
-  resolveOutput,
   scaledHeight,
   STACK_FORMATS,
+  stackFileStem,
   stackImages,
   stackSize,
   type ImagePreview,
@@ -168,38 +166,12 @@ export function StackImages() {
   async function handleStack() {
     if (!canStack) return;
 
-    let defaultPath = `stacked.${format}`;
-    try {
-      defaultPath = await join(await dirname(files[0].path), defaultPath);
-    } catch {
-      // fall back to a bare file name; the dialog picks a folder
-    }
-
-    const chosen = await save({
-      defaultPath,
-      filters: [
-        {
-          name: format.toUpperCase(),
-          extensions: format === "jpg" ? ["jpg", "jpeg"] : [format],
-        },
-      ],
-    });
-    if (!chosen) return;
-
-    const target = resolveOutput(chosen, format);
-    if (target.format !== format) setFormat(target.format);
-    const targetLimit = output ? formatLimitError(target.format, output) : null;
-    if (targetLimit) {
-      setStatus({ state: "error", message: targetLimit });
-      return;
-    }
-
     setStatus({ state: "stacking" });
     try {
       const result = await stackImages(
         files.map((f) => f.path),
-        target.path,
-        target.format,
+        stackFileStem(),
+        format,
         quality,
         matchWidth,
       );
@@ -225,7 +197,8 @@ export function StackImages() {
         <p className="text-sm text-muted-foreground">
           Drop two or more images and they&apos;re joined top to bottom into
           one. Every image is scaled to the same width first, keeping its
-          proportions.
+          proportions. The result is saved next to the first image as{" "}
+          <span className="font-mono text-xs">stacked-&#123;date&#125;</span>.
         </p>
       </div>
 
