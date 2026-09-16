@@ -34,6 +34,8 @@ image = { version = "0.25", features = ["avif"] }
 # Lossy WebP encoding with a quality knob (the `image` crate's WebP encoder is
 # lossless-only).
 webp = "0.3"
+# Stack Images sends preview thumbnails to the webview as base64 data URLs.
+base64 = "0.22"
 
 # HEIC/HEIF decoding via system libheif (input only). Requires libheif to be
 # installed on the build/host machine (e.g. `brew install libheif`). There is no

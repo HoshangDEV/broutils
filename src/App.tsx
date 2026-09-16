@@ -11,6 +11,7 @@ import { checkForUpdate, type AvailableUpdate } from "@/lib/update";
 import { BulkRename } from "@/components/bulk-rename";
 import { ConvertImages } from "@/components/convert-images";
 import { CompressVideos } from "@/components/compress-videos";
+import { StackImages } from "@/components/stack-images";
 import { HoshangDEVIcon, GitHubIcon } from "@/components/icon";
 import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -75,6 +76,7 @@ function App() {
         <TabsList>
           <TabsTrigger value="compress-videos">Compress Videos</TabsTrigger>
           <TabsTrigger value="convert-images">Convert Images</TabsTrigger>
+          <TabsTrigger value="stack-images">Stack Images</TabsTrigger>
           <TabsTrigger value="bulk-rename">Bulk Rename</TabsTrigger>
           {/* Future tools get their own <TabsTrigger> + <TabsContent> here. */}
         </TabsList>
@@ -85,6 +87,10 @@ function App() {
 
         <TabsContent value="convert-images">
           <ConvertImages />
+        </TabsContent>
+
+        <TabsContent value="stack-images">
+          <StackImages />
         </TabsContent>
         
         <TabsContent value="bulk-rename">

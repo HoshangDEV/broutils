@@ -1,4 +1,5 @@
 mod compress;
+mod stack;
 
 use std::fs::File;
 use std::io::{BufWriter, Write};
@@ -349,6 +350,8 @@ pub fn run() {
             compress::cancel_compression,
             compress::get_file_size,
             compress::detect_gpu_encoders,
+            stack::image_preview,
+            stack::stack_images,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
