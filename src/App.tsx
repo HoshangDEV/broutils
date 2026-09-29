@@ -12,7 +12,7 @@ import { BulkRename } from "@/components/bulk-rename";
 import { ConvertImages } from "@/components/convert-images";
 import { CompressVideos } from "@/components/compress-videos";
 import { StackImages } from "@/components/stack-images";
-import { HoshangDEVIcon, GitHubIcon } from "@/components/icon";
+import { GitHubIcon } from "@/components/icon";
 import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useEffect, useState } from "react";
@@ -100,13 +100,6 @@ function App() {
       </Tabs>
 
       <div className="flex gap-4 mx-auto mt-auto">
-        <button
-          onClick={() => openUrl("https://hoshang.dev")}
-          className="text-xs text-muted-foreground fill-muted-foreground gap-2 flex flex-col items-center hover:bg-muted/50 transition-colors w-fit p-4 rounded-xl cursor-pointer"
-        >
-          <HoshangDEVIcon width={25} height={25} className="inline-block" />
-          <p>HoshangDEV</p>
-        </button>
         <button
           onClick={() => openUrl("https://github.com/HoshangDEV/broutils")}
           className="text-xs text-muted-foreground fill-muted-foreground gap-2 flex flex-col items-center hover:bg-muted/50 transition-colors w-fit p-4 rounded-xl cursor-pointer"
