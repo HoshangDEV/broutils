@@ -1,3 +1,4 @@
+mod clipboard;
 mod compress;
 #[cfg(not(target_os = "windows"))]
 mod heic;
@@ -103,7 +104,7 @@ struct ConvertResult {
 }
 
 /// Converts each image to its chosen target format, written into the same
-/// folder as the source.
+/// folder as the source (Downloads for pasted images).
 ///
 /// - `base_name`: when non-empty, outputs are named `{base}-{index}.{ext}`
 ///   (index is 1-based, following the incoming order). When empty, the original
@@ -139,8 +140,7 @@ fn convert_images(
             };
             let new_name = format!("{stem}.{ext}");
 
-            let parent = src.parent().unwrap_or_else(|| Path::new(""));
-            let dst = parent.join(&new_name);
+            let dst = clipboard::output_dir(src).join(&new_name);
             let new_path = dst.to_string_lossy().into_owned();
 
             // Refuse to clobber a different, pre-existing file.
@@ -252,6 +252,18 @@ fn temp_path(dst: &Path) -> PathBuf {
     dst.with_file_name(name)
 }
 
+/// `{stem}.{ext}` in `dir`, or `{stem}-2.{ext}`, `{stem}-3.{ext}`, … when that
+/// name is already taken.
+fn unique_path(dir: &Path, stem: &str, ext: &str) -> PathBuf {
+    let mut candidate = dir.join(format!("{stem}.{ext}"));
+    let mut n = 2;
+    while candidate.exists() {
+        candidate = dir.join(format!("{stem}-{n}.{ext}"));
+        n += 1;
+    }
+    candidate
+}
+
 /// Encodes `img` to `out` in the requested format, flushing before returning so
 /// buffered-write failures surface instead of being swallowed on drop.
 fn encode_image(img: DynamicImage, out: &Path, fmt: &str, quality: u8) -> Result<(), String> {
@@ -311,6 +323,11 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_notification::init())
         .manage(compress::CompressState::default())
+        .setup(|_| {
+            // Pasted images from a previous run are no longer queued anywhere.
+            let _ = std::fs::remove_dir_all(clipboard::paste_dir());
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             rename_files,
             convert_images,
@@ -320,6 +337,7 @@ pub fn run() {
             compress::detect_gpu_encoders,
             stack::image_preview,
             stack::stack_images,
+            clipboard::read_clipboard_files,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

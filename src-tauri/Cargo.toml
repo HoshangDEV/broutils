@@ -36,6 +36,10 @@ image = { version = "0.25", features = ["avif"] }
 webp = "0.3"
 # Stack Images sends preview thumbnails to the webview as base64 data URLs.
 base64 = "0.22"
+# Pasting into the image tools: copied files and (off macOS) image pixels.
+arboard = "3.6"
+# Downloads folder, where outputs made from pasted images are saved.
+dirs = "6"
 
 # HEIC/HEIF decoding (input only, see src/heic.rs). macOS uses the system
 # ImageIO framework, so the app bundle ships no third-party library and runs on
@@ -46,6 +50,8 @@ base64 = "0.22"
 objc2-core-foundation = { version = "0.3", default-features = false, features = ["std", "CFCGTypes", "CFDictionary", "CFNumber", "CFString", "CFURL"] }
 objc2-core-graphics = { version = "0.3", default-features = false, features = ["std", "CGBitmapContext", "CGColorSpace", "CGContext", "CGImage"] }
 objc2-image-io = { version = "0.3", default-features = false, features = ["std", "CGImageProperties", "CGImageSource", "objc2-core-graphics"] }
+# Reads pasted PNG/TIFF bytes straight off the pasteboard (arboard only reads TIFF).
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSPasteboard"] }
 
 [target.'cfg(not(any(target_os = "windows", target_os = "macos")))'.dependencies]
 libheif-rs = "1.1"

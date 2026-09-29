@@ -195,9 +195,10 @@ export function StackImages() {
       <div>
         <h2 className="text-xl font-semibold tracking-tight">Stack Images</h2>
         <p className="text-sm text-muted-foreground">
-          Drop two or more images and they&apos;re joined top to bottom into
-          one. Every image is scaled to the same width first, keeping its
-          proportions. The result is saved next to the first image as{" "}
+          Drop or paste two or more images and they&apos;re joined top to
+          bottom into one. Every image is scaled to the same width first,
+          keeping its proportions. The result is saved next to the first image
+          (Downloads if it was pasted) as{" "}
           <span className="font-mono text-xs">stacked-&#123;date&#125;</span>.
         </p>
       </div>
@@ -209,6 +210,7 @@ export function StackImages() {
         buttonLabel="Select Images"
         disabled={isStacking}
         accept={isSupportedImage}
+        pasteable
         dialogFilters={[{ name: "Images", extensions: INPUT_EXTENSIONS }]}
         hint={hint}
       />

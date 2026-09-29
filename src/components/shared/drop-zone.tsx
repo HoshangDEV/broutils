@@ -1,10 +1,13 @@
+import { ClipboardPasteIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import { open } from "@tauri-apps/plugin-dialog";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { PASTE_SHORTCUT, readClipboardFiles } from "@/lib/clipboard";
 import { basename } from "@/lib/files";
 import { useFileDrop } from "@/lib/use-file-drop";
+import { usePasteShortcut } from "@/lib/use-paste-shortcut";
 import { cn } from "@/lib/utils";
 
 type DialogFilter = { name: string; extensions: string[] };
@@ -22,8 +25,13 @@ interface DropZoneProps {
   dialogFilters?: DialogFilter[];
   /** Keep only dropped paths whose filename matches (dialog uses `dialogFilters`). */
   accept?: (name: string) => boolean;
+  /** Also take files or image data from the clipboard (Paste button + shortcut). */
+  pasteable?: boolean;
   disabled?: boolean;
 }
+
+/** How long a paste notice replaces the hint. */
+const NOTICE_MS = 3000;
 
 /**
  * The shared drag-and-drop / file-picker surface used by every tool. Owns the
@@ -37,11 +45,23 @@ export function DropZone({
   buttonLabel,
   dialogFilters,
   accept,
+  pasteable = false,
   disabled = false,
 }: DropZoneProps) {
-  function emit(paths: string[]) {
+  /** Replaces the hint briefly when a paste finds nothing usable. */
+  const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(null), NOTICE_MS);
+    return () => clearTimeout(timer);
+  }, [notice]);
+
+  /** Emits the accepted paths and returns how many there were. */
+  function emit(paths: string[]): number {
     const filtered = accept ? paths.filter((p) => accept(basename(p))) : paths;
     if (filtered.length) onFiles(filtered);
+    return filtered.length;
   }
 
   const isDragging = useFileDrop((paths) => {
@@ -53,6 +73,18 @@ export function DropZone({
     if (!selected) return;
     emit(Array.isArray(selected) ? selected : [selected]);
   }
+
+  async function handlePaste() {
+    if (disabled) return;
+    try {
+      const added = emit(await readClipboardFiles());
+      setNotice(added ? null : "Nothing to paste — copy an image or image files first");
+    } catch (e) {
+      setNotice(`Couldn't read the clipboard: ${e}`);
+    }
+  }
+
+  usePasteShortcut(handlePaste, pasteable);
 
   return (
     <div
@@ -68,11 +100,22 @@ export function DropZone({
       <p className="text-sm font-medium">
         {isDragging ? "Drop to add files" : title}
       </p>
-      <p className="text-xs text-muted-foreground">{hint}</p>
-      <Button className="mt-1" size="sm" onClick={handleSelect} disabled={disabled}>
-        <HugeiconsIcon icon={icon} />
-        {buttonLabel}
-      </Button>
+      <p className={cn("text-xs", notice ? "text-destructive" : "text-muted-foreground")}>
+        {notice ?? hint}
+      </p>
+      <div className="mt-1 flex items-center gap-2">
+        <Button size="sm" onClick={handleSelect} disabled={disabled}>
+          <HugeiconsIcon icon={icon} />
+          {buttonLabel}
+        </Button>
+        {pasteable && (
+          <Button size="sm" variant="outline" onClick={handlePaste} disabled={disabled}>
+            <HugeiconsIcon icon={ClipboardPasteIcon} />
+            Paste
+            <kbd className="font-sans text-muted-foreground">{PASTE_SHORTCUT}</kbd>
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

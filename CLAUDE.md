@@ -13,7 +13,8 @@ Tech stack: React 19 + TypeScript 5 (Vite 7) frontend, Rust backend via Tauri v2
 Reusable pieces live alongside the tools so each tab stays thin:
 - `src/components/shared/drop-zone.tsx` — the drag-and-drop / file-picker surface used by every tab (configurable icon, hint, dialog filters, optional `accept` predicate).
 - `src/lib/use-file-drop.ts` — hook wrapping the Tauri native drag-drop listener; returns `isDragging` and reports dropped paths.
-- `src/lib/files.ts` — `basename`, `extensionOf`, `formatSize`. `rename.ts`/`convert.ts` re-export `basename` for backwards compatibility.
+- `src/lib/files.ts` — `basename`, `extensionOf`, `formatSize`, `datedStem`. `rename.ts`/`convert.ts` re-export `basename` for backwards compatibility.
+- Paste: `DropZone`'s `pasteable` prop adds a Paste button and the ⌘V/Ctrl+V shortcut (`src/lib/use-paste-shortcut.ts`, ignored inside text fields). `read_clipboard_files` (`src-tauri/src/clipboard.rs`) returns copied files' paths, or saves copied image data to a temp folder (PNG/TIFF bytes as-is on macOS, via `arboard` elsewhere). Outputs made from pasted images go to Downloads — use `clipboard::output_dir` for any new tool that writes next to its source.
 
 ## System dependencies
 

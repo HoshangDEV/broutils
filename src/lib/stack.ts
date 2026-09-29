@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
 import { INPUT_EXTENSIONS, isSupportedImage } from "@/lib/convert";
-import { basename } from "@/lib/files";
+import { basename, datedStem } from "@/lib/files";
 
 export { basename, INPUT_EXTENSIONS, isSupportedImage };
 
@@ -78,10 +78,7 @@ export function stackImages(
 
 /** `stacked-2026-09-16-181530` — local date and time, so repeat saves don't collide. */
 export function stackFileStem(date = new Date()): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const day = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-  const time = `${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
-  return `stacked-${day}-${time}`;
+  return datedStem("stacked", date);
 }
 
 /** Height after scaling to `width`; mirrors `scaled_height` in Rust. */

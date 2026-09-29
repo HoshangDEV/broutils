@@ -5,7 +5,8 @@ use image::metadata::Orientation;
 use image::{imageops, DynamicImage, ImageDecoder, ImageReader, RgbaImage};
 use serde::Serialize;
 
-use crate::{encode_image, load_image, output_extension, temp_path};
+use crate::clipboard::output_dir;
+use crate::{encode_image, load_image, output_extension, temp_path, unique_path};
 
 /// Longest edge budget for the in-app thumbnail. Wide enough to look sharp in
 /// the preview column on a 2x display; tall enough for long screenshots.
@@ -65,8 +66,8 @@ pub async fn image_preview(path: String) -> Result<ImagePreview, String> {
 }
 
 /// Stacks the images top-to-bottom, in the given order, into one image saved
-/// next to the first image as `{file_stem}.{ext}`. A `-2`, `-3`, … suffix is
-/// added rather than overwriting an existing file.
+/// next to the first image (Downloads if it was pasted) as `{file_stem}.{ext}`.
+/// A `-2`, `-3`, … suffix is added rather than overwriting an existing file.
 ///
 /// Every image is first scaled (aspect ratio kept) to a shared width:
 /// - `match_width = "widest"`: smaller images are enlarged to the widest one.
@@ -167,21 +168,14 @@ fn stack_blocking(
     })
 }
 
-/// `{stem}.{ext}` in the folder of `first`, or `{stem}-2.{ext}`, `{stem}-3.{ext}`, …
-/// when that name is already taken.
+/// `{stem}.{ext}` in the output folder for `first`, or `{stem}-2.{ext}`,
+/// `{stem}-3.{ext}`, … when that name is already taken.
 fn unique_output_path(first: &Path, stem: &str, ext: &str) -> PathBuf {
-    let dir = first.parent().unwrap_or_else(|| Path::new(""));
     let stem = match stem.trim() {
         "" => "stacked",
         s => s,
     };
-    let mut candidate = dir.join(format!("{stem}.{ext}"));
-    let mut n = 2;
-    while candidate.exists() {
-        candidate = dir.join(format!("{stem}-{n}.{ext}"));
-        n += 1;
-    }
-    candidate
+    unique_path(&output_dir(first), stem, ext)
 }
 
 /// Height after scaling `img` to `width`, rounded to the nearest pixel.

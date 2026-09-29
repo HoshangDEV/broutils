@@ -232,8 +232,9 @@ export function ConvertImages() {
       <div>
         <h2 className="text-xl font-semibold tracking-tight">Convert Images</h2>
         <p className="text-sm text-muted-foreground">
-          Drop images, pick a target format (per file or all at once), and
-          they&apos;re re-encoded into the same folder. HEIC input is supported.
+          Drop or paste images, pick a target format (per file or all at once),
+          and they&apos;re re-encoded into the same folder — pasted images go to
+          Downloads. HEIC input is supported.
         </p>
       </div>
 
@@ -244,6 +245,7 @@ export function ConvertImages() {
         buttonLabel="Select Images"
         disabled={isConverting}
         accept={isSupportedImage}
+        pasteable
         dialogFilters={[{ name: "Images", extensions: INPUT_EXTENSIONS }]}
         hint={
           files.length > 0
