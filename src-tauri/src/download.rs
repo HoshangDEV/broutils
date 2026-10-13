@@ -134,15 +134,31 @@ pub async fn ytdlp_update(app: AppHandle) -> Result<String, String> {
         .ok_or_else(|| "yt-dlp is not installed".to_string())
 }
 
-/// yt-dlp format selector for a quality preset. Every preset falls back to the
-/// best available format rather than failing when its preference is missing.
-fn format_selector(quality: &str) -> &'static str {
+/// Format selector shared by every preset: best video (+ separate audio when
+/// the site splits them). `bv*` never matches an audio-only format, so a link
+/// with no video fails instead of silently saving an mp3.
+const FORMAT: &str = "bv*+ba/bv*";
+
+/// yt-dlp sort order (`-S`) for a quality preset. Sorting only prefers, so each
+/// preset still falls back to whatever video exists. `res` is the shorter side,
+/// so 720p means 720x1280 for portrait TikToks too (`height` would be 1280).
+fn format_sort(quality: &str) -> Option<&'static str> {
     match quality {
-        "best" => "bv*+ba/b",
-        "1080" => "bv*[height<=1080]+ba/b[height<=1080]/bv*+ba/b",
-        "720" => "bv*[height<=720]+ba/b[height<=720]/bv*+ba/b",
-        // H.264 + AAC plays everywhere (QuickTime, WhatsApp, old phones).
-        _ => "bv*[vcodec^=avc]+ba[ext=m4a]/b[vcodec^=avc]/bv*+ba/b",
+        "best" => None,
+        "1080" => Some("res:1080"),
+        "720" => Some("res:720"),
+        // H.264 + AAC plays everywhere (QuickTime, WhatsApp, old phones). The
+        // sort matches both `avc1` (YouTube) and `h264` (TikTok) codec names.
+        _ => Some("vcodec:h264,res,acodec:m4a"),
+    }
+}
+
+/// yt-dlp's error when `FORMAT` finds no video, reworded for the UI.
+fn friendly_error(msg: &str) -> String {
+    if msg.contains("Requested format is not available") {
+        "No video found at this link, only audio (some TikTok ads can't be downloaded)".into()
+    } else {
+        msg.to_string()
     }
 }
 
@@ -229,7 +245,7 @@ pub async fn download_video(
         "--js-runtimes".into(),
         "bun".into(),
         "-f".into(),
-        format_selector(&quality).into(),
+        FORMAT.into(),
         "--merge-output-format".into(),
         "mp4".into(),
         "--progress-template".into(),
@@ -246,6 +262,9 @@ pub async fn download_video(
         // .120B caps long/unicode titles in bytes, under filesystem limits.
         "%(title).120B [%(id)s].%(ext)s".into(),
     ];
+    if let Some(sort) = format_sort(&quality) {
+        args.extend(["-S".into(), sort.into()]);
+    }
     if let Some(ffmpeg) = ffmpeg_path() {
         args.extend(["--ffmpeg-location".into(), ffmpeg.to_string_lossy().into()]);
     }
@@ -282,7 +301,7 @@ pub async fn download_video(
                         path = Some(file.to_string());
                         continue;
                     } else if let Some(msg) = line.strip_prefix("ERROR: ") {
-                        error = Some(msg.to_string());
+                        error = Some(friendly_error(msg));
                         continue;
                     } else {
                         continue;
