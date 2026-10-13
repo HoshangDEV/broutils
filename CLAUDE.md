@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-BroUtils — a Tauri v2 desktop app. Multi-tool toolbox; tools are Bulk Rename, Convert Images, Stack Images, and Compress Videos. New tools are added as tabs.
+BroUtils — a Tauri v2 desktop app. Multi-tool toolbox; tools are Bulk Rename, Convert Images, Stack Images, Compress Videos, and Download Videos. New tools are added as tabs.
 
 Tech stack: React 19 + TypeScript 5 (Vite 7) frontend, Rust backend via Tauri v2 IPC.
 
@@ -21,6 +21,8 @@ Reusable pieces live alongside the tools so each tab stays thin:
 HEIC/HEIF input (`src-tauri/src/heic.rs`) is decoded with the system **ImageIO** framework on macOS, so the app bundle links no third-party libraries and nothing extra needs installing to build it. Other Unix targets use the `libheif-rs` crate, which links against the **system libheif** library. HEIC input is unsupported on Windows. The macOS bundle is ad-hoc signed (`bundle.macOS.signingIdentity: "-"`) — without it, Gatekeeper reports the downloaded app as damaged. Keep the macOS binary free of Homebrew dylibs: hardened runtime refuses to load them, and they don't exist on users' Macs.
 
 Compress Videos shells out to a bundled **FFmpeg sidecar** (`src-tauri/binaries/ffmpeg-<target-triple>`, declared as `externalBin` in `tauri.conf.json` and allowed via `shell:allow-execute` in capabilities). The macOS ARM64 binary is committed; the ~200MB Windows binary is gitignored — fetch it before a Windows build with `bash scripts/download-ffmpeg-windows.sh`. The tool also uses `tauri-plugin-notification` to notify when a batch finishes.
+
+Download Videos (`src-tauri/src/download.rs`) runs **yt-dlp**, which is *not* bundled: the first download fetches the platform's onedir zip build from yt-dlp's GitHub releases into `<app data>/yt-dlp/` (via system `curl` + `tar`/`unzip`), and the tab's "Check for update" runs `yt-dlp -U` on it. Bundling would freeze it — sites break old versions every few weeks — and the one-file builds take ~13s per launch on macOS. It's spawned with `shell().command()` from Rust, so no capability entry is needed; merging uses the FFmpeg sidecar via `--ffmpeg-location`. YouTube needs a JS runtime (deno, node, or bun) on the user's machine; Homebrew/deno/bun folders are added to the child's PATH since macOS GUI apps start with a bare one.
 
 Stack Images (`src-tauri/src/stack.rs`) reuses the Convert Images decode/encode helpers. Previews are decoded in Rust and sent as base64 WebP data URLs (so HEIC previews work); row reordering uses `@dnd-kit/react`, which is pointer-based and so doesn't clash with Tauri's native file-drop listener.
 

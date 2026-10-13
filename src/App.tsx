@@ -11,6 +11,7 @@ import { checkForUpdate, type AvailableUpdate } from "@/lib/update";
 import { BulkRename } from "@/components/bulk-rename";
 import { ConvertImages } from "@/components/convert-images";
 import { CompressVideos } from "@/components/compress-videos";
+import { DownloadVideos } from "@/components/download-videos";
 import { StackImages } from "@/components/stack-images";
 import { GitHubIcon } from "@/components/icon";
 import { getVersion } from "@tauri-apps/api/app";
@@ -75,6 +76,7 @@ function App() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full gap-6">
         <TabsList>
           <TabsTrigger value="compress-videos">Compress Videos</TabsTrigger>
+          <TabsTrigger value="download-videos">Download Videos</TabsTrigger>
           <TabsTrigger value="convert-images">Convert Images</TabsTrigger>
           <TabsTrigger value="stack-images">Stack Images</TabsTrigger>
           <TabsTrigger value="bulk-rename">Bulk Rename</TabsTrigger>
@@ -83,6 +85,10 @@ function App() {
 
         <TabsContent value="compress-videos">
           <CompressVideos />
+        </TabsContent>
+
+        <TabsContent value="download-videos">
+          <DownloadVideos />
         </TabsContent>
 
         <TabsContent value="convert-images">

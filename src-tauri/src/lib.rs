@@ -1,5 +1,6 @@
 mod clipboard;
 mod compress;
+mod download;
 #[cfg(not(target_os = "windows"))]
 mod heic;
 mod stack;
@@ -323,6 +324,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_notification::init())
         .manage(compress::CompressState::default())
+        .manage(download::DownloadState::default())
         .setup(|_| {
             // Pasted images from a previous run are no longer queued anywhere.
             let _ = std::fs::remove_dir_all(clipboard::paste_dir());
@@ -335,6 +337,11 @@ pub fn run() {
             compress::cancel_compression,
             compress::get_file_size,
             compress::detect_gpu_encoders,
+            download::ytdlp_version,
+            download::ytdlp_install,
+            download::ytdlp_update,
+            download::download_video,
+            download::cancel_download,
             stack::image_preview,
             stack::stack_images,
             clipboard::read_clipboard_files,

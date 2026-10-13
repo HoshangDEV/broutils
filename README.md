@@ -2,12 +2,13 @@
 
 # BroUtils
 
-A small native desktop toolbox built with Tauri v2 + React. Four tools in one app:
+A small native desktop toolbox built with Tauri v2 + React. Five tools in one app:
 
 - **Bulk Rename** — rename a batch of files with find/replace or sequential numbering
 - **Convert Images** — convert JPEG, PNG, WEBP, HEIC/HEIF, and more to any common format (AVIF, WebP, JPEG, PNG…)
 - **Stack Images** — join images top to bottom into one, scaled to a shared width, with drag-and-drop ordering
 - **Compress Videos** — batch-compress videos via a bundled FFmpeg sidecar with progress tracking and a finish notification
+- **Download Videos** — paste links from YouTube, TikTok, Instagram, Facebook, X and more; saved as MP4 via [yt-dlp](https://github.com/yt-dlp/yt-dlp), downloaded on first use
 
 ## Download
 
@@ -75,15 +76,17 @@ src/
     convert-images.tsx    # Convert Images tab
     stack-images.tsx      # Stack Images tab
     compress-videos.tsx   # Compress Videos tab
+    download-videos.tsx   # Download Videos tab
     shared/               # Shared UI (DropZone, etc.)
   lib/
-    rename.ts / convert.ts / stack.ts / compress.ts   # IPC wrappers
+    rename.ts / convert.ts / stack.ts / compress.ts / download.ts   # IPC wrappers
     files.ts              # basename, extensionOf, formatSize
     use-file-drop.ts      # Tauri drag-drop hook
 src-tauri/
   src/
     lib.rs                # Tauri commands
     compress.rs           # FFmpeg sidecar logic
+    download.rs           # yt-dlp install/update and downloads
     stack.rs              # Stack Images logic
   binaries/               # FFmpeg sidecars
   capabilities/           # Tauri permission config
